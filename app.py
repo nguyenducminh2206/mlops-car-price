@@ -1,5 +1,5 @@
 import pickle
-from Flask import Flask, request, jsonify, url_for, render_template
+from flask import Flask, request, jsonify, url_for, render_template
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
@@ -8,21 +8,25 @@ from catboost import CatBoostRegressor
 
 # create an app instance
 app = Flask(__name__)
-model = pickle.load('./models/Model.pkl', 'rb')
-Brand_Encoder = pickle.load('./models/Brand_Encoder.pkl', 'rb')
-Model_Encoder = pickle.load('./models/Model_Encoder.pkl', 'rb')
-OneHot_Encoder = pickle.load('./models/OneHot_Encoder.pkl', 'rb')
+with open('./models/Model.pkl', 'rb') as f:
+    price_model = pickle.load(f)
+with open('./models/Brand_Encoder.pkl', 'rb') as f:
+    Brand_Encoder = pickle.load(f)
+with open('./models/Model_Encoder.pkl', 'rb') as f:
+    Model_Encoder = pickle.load(f)
+with open('./models/OneHot_Encoder.pkl', 'rb') as f:
+    OneHot_Encoder = pickle.load(f)
 
 @app.route("/", methods=['GET'])
 def home():
     return render_template('index.html')
 
-app.route("/predict", methods=['POST'])
+@app.route("/predict", methods=['POST'])
 def predict():
     if request.method == 'POST':
         # extract form data
         brand = request.form['Brand']
-        model = request.form['Model']
+        car_model = request.form['Model']
         fuel = request.form['Fuel']
         transmission = request.form['Transmission']
         year = int(request.form['Year'])
@@ -34,7 +38,7 @@ def predict():
         # create dataframe for the input data
         input_df = pd.DataFrame({
             'Brand': [brand],
-            'Model': [model],
+            'Model': [car_model],
             'Year': [year],
             'EngineSize': [engine_size],
             'Fuel': [fuel],
@@ -61,7 +65,7 @@ def predict():
         input_data = pd.concat([input_df_encoded, encoded_df], axis=1)
         
         # make prediction
-        prediction = model.predict(input_data)
+        prediction = price_model.predict(input_data)
         output = round(prediction[0], 2)
         
         if output < 0:
